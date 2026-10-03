@@ -9,11 +9,16 @@ case "$ARM" in A) CRITIC_MODE=none ;; B) CRITIC_MODE=llm ;; C) CRITIC_MODE=clef 
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="$HOME/.local/bin:$PATH"
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 set -a; source <(sed 's/\r$//' "$ROOT/.env"); set +a
 
 AGENT_MODEL="${AGENT_MODEL:-gpt-6-luna}"
 DATASET_DIR="${DATASET_DIR:-$HOME/datasets/terminal-bench}"  # from: harbor datasets download terminal-bench@2.0
-OPENCODE_VERSION="${OPENCODE_VERSION:-}"
+OPENCODE_VERSION="${OPENCODE_VERSION:-1.18.34}"  # pinned: version used in Phase 0 smoke runs
+
+if [ -n "$(git -C "$ROOT" status --porcelain)" ] && [ "${ALLOW_DIRTY:-0}" != 1 ]; then
+  echo "Refusing to run: uncommitted changes (commit first, or ALLOW_DIRTY=1 for debugging)." >&2; exit 3
+fi
 
 RUN_DIR="$ROOT/runs/$(date -u +%Y%m%dT%H%M%SZ)_${ARM}"
 mkdir -p "$RUN_DIR"
@@ -41,9 +46,10 @@ JSON
 VERSION_ARGS=(); [ -n "$OPENCODE_VERSION" ] && VERSION_ARGS=(--ak "version=$OPENCODE_VERSION")
 
 set +e
+cd "$HOME"  # harbor reads Path.cwd(); /mnt drvfs cwd lookups can fail intermittently
 harbor run -y \
   -p "$DATASET_DIR" \
-  -a opencode -m "callmissed/$AGENT_MODEL" \
+  -a harbor_ext.opencode_critic:OpenCodeCritic -m "callmissed/$AGENT_MODEL" \
   --ak "opencode_config=$OPENCODE_CONFIG" "${VERSION_ARGS[@]}" \
   --ae "CALLMISSED_API_KEY=$CALLMISSED_API_KEY" \
   --ae "CF_ACCOUNT_ID=$CF_ACCOUNT_ID" --ae "CF_API_TOKEN=$CF_API_TOKEN" \
