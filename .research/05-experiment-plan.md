@@ -195,6 +195,7 @@ Note: the Clef free tier (10k neurons/day ≈ 0.46M input tokens/day [per subage
 |---|---|---|---|
 | 2026-10-03 | draft | initial plan | — |
 | 2026-10-03 | draft | Evidence policy: runs append-only in `runs/<ts>_<arm>/` with `MANIFEST.sha256` + pinned versions; raw data published as dataset (HF/Zenodo), code on GitHub; no upstream forks unless patching is required | user requirement: never lose evidence, reproducible public repo |
+| 2026-10-03 | draft | Phase 0 decisions: (1) plugin runs in ALL arms; arm A = CRITIC_MODE=none logs exact critic input without calling a critic, and replay reuses the logged inputs; (2) LLM critic uses `reasoning_effort: minimal` + JSON mode (1.5 s vs 4 s default); (3) CallMissed returns `logprobs: null`, so LLM probabilities are verbalized; (4) Clef `questions` is a map keyed by id; (5) OpenCode pinned 1.18.34, Harbor 0.23.0, TB2 local copy sha256 561f0e32…; (6) runner refuses dirty git tree | Phase 0 feasibility results |
 
 ## 15. Open items (must resolve in Phase 0)
 

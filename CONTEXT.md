@@ -26,5 +26,12 @@ Research prototype: reduce LLM tool-calling hallucination by verifying each (too
 - Full plan: `.research/05-experiment-plan.md` (RQs, arms, architecture, files, judging, stats, phases).
 - Injection point: OpenCode plugin hook `tool.execute.after` (verified in plugin types). Whether output mutation reaches the model is unverified.
 
+## Phase 0 (done 2026-10-03)
+- Harbor 0.23.0 in WSL; TB2 (89 tasks: 4 easy/55 medium/30 hard) downloaded to WSL ~/datasets/terminal-bench.
+- Runner: `wsl bash scripts/run_arm.sh <A|B|C> [harbor args]` → `runs/<ts>_<arm>/` with provenance + redaction + MANIFEST.sha256.
+- Plugin `critic/critic.js` verified: verdict appears in recorded tool output; critic.jsonl per trial at `.../agent/critic.jsonl`.
+- Smoke runs on fix-git: A, B, C all reward 1.0. Two invalid runs kept with INVALID.md.
+- WSL /mnt/e cwd glitch → runner cds to $HOME.
+
 ## Next
-Phase 0 feasibility (see plan §11, §15). Confirm Docker/WSL2 with user.
+Phase 1 remainder: scripts/collect.py, to_markdown.py. Then Phase 2 pilot (5 tasks × 3 arms).
