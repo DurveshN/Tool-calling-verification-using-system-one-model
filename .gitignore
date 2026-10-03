@@ -1,0 +1,14 @@
+# Secrets
+.env
+*.key
+
+# Raw evidence: preserved locally (append-only), published separately as a dataset
+runs/
+data/
+!data/README.md
+
+# Tooling
+node_modules/
+__pycache__/
+.venv/
+*.pyc

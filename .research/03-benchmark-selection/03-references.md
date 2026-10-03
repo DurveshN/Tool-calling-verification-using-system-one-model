@@ -1,0 +1,18 @@
+# References (opened unless noted)
+- https://github.com/laude-institute/terminal-bench (Apache-2.0, Docker + uv)
+- https://github.com/harbor-framework/harbor (Apache-2.0, Docker/cloud providers)
+- https://github.com/harbor-framework/harbor/tree/main/src/harbor/agents/installed (opencode.py present)
+- https://github.com/harbor-framework/harbor/blob/main/src/harbor/agents/installed/opencode.py
+- https://arxiv.org/abs/2601.11868 (Terminal-Bench 2.0, 89 tasks)
+- https://arxiv.org/html/2601.11868v1
+- https://evalscope.readthedocs.io/en/latest/benchmarks/terminal_bench_v2.html (89 tasks, binary scoring, 200 max turns, Docker)
+- https://www.tbench.ai/
+- https://github.com/sst/opencode (MIT, MCP, run mode, Windows)
+- https://github.com/SWE-bench/SWE-bench (MIT, Verified 500, Multimodal 480, Docker, 120GB)
+- https://github.com/sierra-research/tau2-bench (MIT)
+- https://arxiv.org/abs/2506.07982
+- https://arxiv.org/html/2509.24002v1 (MCPMark: 127 tasks, 17.4 calls)
+- https://github.com/eval-sys/mcpmark (Apache-2.0)
+- https://arxiv.org/html/2406.20015v2 (ToolBeHonest; github.com/ToolBeHonest/ToolBeHonest)
+- https://www.alphaxiv.org/abs/2607.04686.md (ToolFailBench; github.com/SoHarshh/ToolFailBench)
+- Search snippets only, not opened: MCP-Atlas https://arxiv.org/html/2602.00933v1 ; LiveMCPBench https://arxiv.org/html/2508.01780v1
