@@ -7,6 +7,7 @@ set -euo pipefail
 ARM="${1:?arm required (A|B|C)}"; shift
 case "$ARM" in A) CRITIC_MODE=none ;; B) CRITIC_MODE=llm ;; C) CRITIC_MODE=clef ;; *) echo "bad arm" >&2; exit 2 ;; esac
 
+PHASE="${PHASE:?set PHASE=smoke|pilot|main}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="$HOME/.local/bin:$PATH"
 export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
@@ -32,7 +33,7 @@ JSON
 
 # Provenance (no secrets).
 {
-  echo "arm=$ARM"; echo "critic_mode=$CRITIC_MODE"; echo "agent_model=callmissed/$AGENT_MODEL"
+  echo "phase=$PHASE"; echo "arm=$ARM"; echo "critic_mode=$CRITIC_MODE"; echo "agent_model=callmissed/$AGENT_MODEL"
   echo "dataset_dir=$DATASET_DIR"
   echo "dataset_sha256=$(cd "$DATASET_DIR/.." && find "$(basename "$DATASET_DIR")" -type f | sort | xargs -d '\n' sha256sum | sha256sum | cut -d' ' -f1)"
   echo "opencode_version=${OPENCODE_VERSION:-latest}"

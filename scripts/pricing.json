@@ -1,0 +1,8 @@
+{
+  "_source": "CallMissed list_models catalogue (2026-10-03); Cloudflare Workers AI Clef model page via .research/04-cloudflare-clef (2026-10-03). USD per million tokens. Cache-read price unknown: cached tokens are costed at the full input price (upper bound).",
+  "gpt-6-luna": { "input": 0.1042, "output": 0.5208 },
+  "gpt-5-mini": { "input": 0.2604, "output": 2.083 },
+  "gpt-4o": { "input": 2.604, "output": 10.42 },
+  "clef": { "input": 0.24, "output": 0 },
+  "clef-flash": { "input": 0.09, "output": 0 }
+}
