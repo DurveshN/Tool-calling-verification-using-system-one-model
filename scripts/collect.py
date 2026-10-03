@@ -43,6 +43,21 @@ def provenance(run: Path) -> dict:
     return prov
 
 
+def tool_status(trial: Path) -> dict[str, tuple[str, str | None]]:
+    """callID -> (final status, error text) from OpenCode's raw event stream (Harbor's trajectory drops errors)."""
+    status: dict[str, tuple[str, str | None]] = {}
+    f = trial / "agent" / "opencode.txt"
+    for line in f.read_text(encoding="utf-8", errors="replace").splitlines() if f.exists() else []:
+        try:
+            part = json.loads(line).get("part") or {}
+        except json.JSONDecodeError:
+            continue
+        if part.get("type") == "tool" and part.get("callID"):
+            st = part.get("state") or {}
+            status[part["callID"]] = (st.get("status"), st.get("error"))
+    return status
+
+
 def critic_cost(rec: dict) -> float | None:
     u, m = rec.get("usage") or {}, rec.get("critic_model")
     if not m:
@@ -55,6 +70,7 @@ def collect_trial(run: Path, prov: dict, trial: Path) -> tuple[dict, list[dict]]
     traj_path = trial / "agent" / "trajectory.json"
     traj = json.loads(traj_path.read_text(encoding="utf-8")) if traj_path.exists() else {"steps": []}
     critic = {r["call_id"]: r for r in read_jsonl(trial / "agent" / "critic.jsonl")}
+    status = tool_status(trial)
 
     base = {"run": run.name, "phase": prov.get("phase"), "arm": prov.get("arm"), "critic_mode": prov.get("critic_mode"),
             "task": res["task_name"], "trial": res["trial_name"]}
@@ -63,10 +79,13 @@ def collect_trial(run: Path, prov: dict, trial: Path) -> tuple[dict, list[dict]]
         outputs = {o.get("source_call_id"): o.get("content") for o in (step.get("observation") or {}).get("results", [])}
         for tc in step.get("tool_calls") or []:
             raw = outputs.get(tc["tool_call_id"])
+            st, err = status.get(tc["tool_call_id"], (None, None))
+            if raw is None and err:
+                raw = f"ERROR: {err}"
             rec = critic.get(tc["tool_call_id"], {})
             calls.append({
                 **base, "call_index": idx, "step_id": step["step_id"], "call_id": tc["tool_call_id"],
-                "tool": tc["function_name"], "args": tc["arguments"],
+                "tool": tc["function_name"], "args": tc["arguments"], "tool_status": st,
                 "output_raw": raw,  # as the agent saw it (includes [tool-check] line in arms B/C)
                 "output": VERDICT_RE.sub("", raw) if isinstance(raw, str) else raw,  # verdict stripped
                 "critic_logged": bool(rec), "critic_state": rec.get("state"),

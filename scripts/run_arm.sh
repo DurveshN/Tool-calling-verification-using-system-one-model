@@ -57,6 +57,8 @@ harbor run -y \
   --ae "CRITIC_MODE=$CRITIC_MODE" \
   --allow-agent-host api.callmissed.com --allow-agent-host api.cloudflare.com \
   -o "$RUN_DIR/jobs" -n "${N_CONCURRENT:-1}" \
+  --agent-setup-timeout-multiplier 3 \
+  --max-retries 2 --retry-include AgentSetupTimeoutError \
   "$@" 2>&1 | tee "$RUN_DIR/harbor.log"
 STATUS=${PIPESTATUS[0]}
 set -e

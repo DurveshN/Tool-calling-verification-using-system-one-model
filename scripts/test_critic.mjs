@@ -2,7 +2,6 @@
 // Usage (from repo root, .env loaded into env): CRITIC_MODE=clef node scripts/test_critic.mjs
 import { readFileSync } from "node:fs"
 
-process.env.CRITIC_CONFIG ||= "critic/questions.json"
 process.env.CRITIC_LOG ||= `${process.env.TEMP || "/tmp"}/critic_test.jsonl`
 const { CriticPlugin } = await import("../critic/critic.js")
 const hooks = await CriticPlugin()
@@ -19,5 +18,8 @@ for (const [i, c] of cases.entries()) {
   await hooks["tool.execute.after"]({ tool: c.tool, sessionID: sid, callID: `c${i}`, args: c.args }, out)
   console.log(`case ${i}:`, JSON.stringify(out.output.slice(c.output.length)) || "(no injection)")
 }
-const last = readFileSync(process.env.CRITIC_LOG, "utf8").trim().split("\n").slice(-3).map(JSON.parse)
-console.log(last.map((r) => ({ mode: r.mode, latency_ms: r.latency_ms, probs: r.probs, error: r.error, recent_n: r.state.recent.length })))
+await hooks.event({ event: { type: "message.part.updated", properties: { part: { type: "tool", tool: "apply_patch", callID: "c3", sessionID: sid,
+  state: { status: "error", input: { patchText: "*** Update File: /etc/hostname" }, error: "apply_patch verification failed: Failed to find expected lines" } } } } })
+console.log("error event logged")
+const last = readFileSync(process.env.CRITIC_LOG, "utf8").trim().split("\n").slice(-4).map(JSON.parse)
+console.log(last.map((r) => ({ mode: r.mode, latency_ms: r.latency_ms, probs: r.probs, error: r.error, recent_n: r.state.recent.length, status: r.tool_status })))

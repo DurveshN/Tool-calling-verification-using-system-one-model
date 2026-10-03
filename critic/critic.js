@@ -1,85 +1,40 @@
-// OpenCode plugin: post-tool-call critic.
-// CRITIC_MODE: none (log critic input only) | llm (CallMissed chat model) | clef | clef-flash (Cloudflare System One).
+// OpenCode plugin: post-tool-call critic. Only one export: OpenCode loads every exported function as a plugin.
+// CRITIC_MODE: none (log critic input only) | llm (CRITIC_LLM_MODEL via CallMissed) | clef | clef-flash.
 // Every tool call appends one JSON record to $CRITIC_LOG (default: <harbor agent logs>/critic.jsonl).
-import { appendFileSync, readFileSync } from "node:fs"
+// Shared logic lives in ../critic/core.js (same relative path in the repo and in ~/.config/opencode).
+import { appendFileSync } from "node:fs"
 import { dirname, join } from "node:path"
+import { CFG, askCritic, buildState, recentEntry, verdictLine } from "../critic/core.js"
 
 const MODE = process.env.CRITIC_MODE || "none"
-const CFG = JSON.parse(readFileSync(process.env.CRITIC_CONFIG || join(process.env.HOME || "", ".config/opencode/critic/questions.json"), "utf8"))
+const CRITIC = MODE === "llm" ? process.env.CRITIC_LLM_MODEL || "gpt-5-mini" : MODE
 const LOG = process.env.CRITIC_LOG || (process.env.XDG_DATA_HOME ? join(dirname(dirname(process.env.XDG_DATA_HOME)), "critic.jsonl") : "critic.jsonl")
-const LLM_MODEL = process.env.CRITIC_LLM_MODEL || "gpt-5-mini"
-const TIMEOUT_MS = Number(process.env.CRITIC_TIMEOUT_MS || 30000)
-const T = CFG.truncation
 
 const tasks = new Map() // sessionID -> first user message text
-const recent = new Map() // sessionID -> last N {tool, args, output}
+const recent = new Map() // sessionID -> last N recentEntry (pre-injection outputs)
+const erroredSeen = new Set()
 
-function truncate(text, head, tail) {
-  const s = typeof text === "string" ? text : JSON.stringify(text)
-  if (s.length <= head + tail) return { text: s, truncated: 0 }
-  return { text: `${s.slice(0, head)}\n[...truncated ${s.length - head - tail} chars...]\n${tail ? s.slice(-tail) : ""}`, truncated: s.length - head - tail }
-}
-
-function buildState(sessionID, tool, args, output) {
-  const out = truncate(output, T.head_chars, T.tail_chars)
-  return {
-    state: { task: tasks.get(sessionID) || "", recent: [...(recent.get(sessionID) || [])], call: { tool, args }, output: out.text },
-    truncated_chars: out.truncated,
-  }
-}
-
-async function post(url, body, key) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  })
-  const json = await res.json()
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${JSON.stringify(json).slice(0, 500)}`)
-  return json
-}
-
-async function askClef(state, model) {
-  const questions = Object.fromEntries(Object.entries(CFG.questions).map(([id, q]) => [id, { type: "noul", instructions: q }]))
-  const r = await post(
-    `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/ai/run/@cf/cloudflare/${model}`,
-    { model, state, questions },
-    process.env.CF_API_TOKEN,
-  )
-  const probs = Object.fromEntries(Object.entries(r.result.answers).map(([id, a]) => [id, a.noul]))
-  return { probs, usage: r.result.usage, raw: r.result }
-}
-
-async function askLLM(state) {
-  const qs = Object.entries(CFG.questions).map(([id, q]) => `${id}: ${q}`).join("\n")
-  const r = await post(
-    "https://api.callmissed.com/v1/chat/completions",
-    {
-      model: LLM_MODEL,
-      reasoning_effort: "minimal",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: CFG.llm.system },
-        { role: "user", content: CFG.llm.user_template.replace("{state}", JSON.stringify(state)).replace("{questions}", qs) },
-      ],
-    },
-    process.env.CALLMISSED_API_KEY,
-  )
-  const content = r.choices[0].message.content
-  const parsed = JSON.parse(content)
-  const probs = Object.fromEntries(Object.keys(CFG.questions).map((id) => [id, Number(parsed[id])]))
-  return { probs, usage: r.usage, raw: content }
-}
-
-function verdictLine(probs) {
-  const flags = Object.entries(probs)
-    .filter(([id, p]) => id !== CFG.primary && p < CFG.flag_below)
-    .map(([id, p]) => `${id}=${p.toFixed(2)}`)
-  return `\n\n[tool-check] P(correct)=${probs[CFG.primary].toFixed(2)}${flags.length ? `  flags: ${flags.join(", ")}` : ""}`
+function remember(sessionID, tool, args, output) {
+  const hist = recent.get(sessionID) || []
+  hist.push(recentEntry(tool, args, output))
+  recent.set(sessionID, hist.slice(-CFG.truncation.recent_calls))
 }
 
 export const CriticPlugin = async () => ({
+  // Tools that throw never reach tool.execute.after. Log their critic input (offline replay only;
+  // the agent already sees the error text, so nothing is injected) and keep them in recent history.
+  event: async ({ event }) => {
+    const p = event?.properties?.part
+    if (event?.type !== "message.part.updated" || p?.type !== "tool" || p.state?.status !== "error" || erroredSeen.has(p.callID)) return
+    erroredSeen.add(p.callID)
+    const output = `ERROR: ${p.state.error}`
+    const { state, truncated_chars } = buildState(tasks.get(p.sessionID) || "", recent.get(p.sessionID) || [], p.tool, p.state.input, output)
+    remember(p.sessionID, p.tool, p.state.input, output)
+    appendFileSync(LOG, JSON.stringify({
+      ts: new Date().toISOString(), mode: MODE, config_version: CFG.version, session_id: p.sessionID, call_id: p.callID,
+      tool: p.tool, tool_status: "error", online: false, state, truncated_chars, output_chars: output.length,
+    }) + "\n")
+  },
   "chat.message": async (input, output) => {
     if (tasks.has(input.sessionID)) return
     const text = (output.parts || []).filter((p) => p.type === "text").map((p) => p.text).join("\n")
@@ -87,28 +42,20 @@ export const CriticPlugin = async () => ({
   },
   "tool.execute.after": async (input, output) => {
     const original = output.output
-    const { state, truncated_chars } = buildState(input.sessionID, input.tool, input.args, output.output)
+    const { state, truncated_chars } = buildState(tasks.get(input.sessionID) || "", recent.get(input.sessionID) || [], input.tool, input.args, original)
     const rec = {
       ts: new Date().toISOString(), mode: MODE, config_version: CFG.version,
-      session_id: input.sessionID, call_id: input.callID, tool: input.tool,
-      state, truncated_chars, output_chars: (output.output || "").length,
+      session_id: input.sessionID, call_id: input.callID, tool: input.tool, tool_status: "completed",
+      online: MODE !== "none", state, truncated_chars, output_chars: (original || "").length,
     }
     if (MODE !== "none") {
-      const t0 = performance.now()
-      try {
-        const r = MODE === "llm" ? await askLLM(state) : await askClef(state, MODE)
-        rec.latency_ms = Math.round(performance.now() - t0)
-        Object.assign(rec, { critic_model: MODE === "llm" ? LLM_MODEL : MODE, probs: r.probs, usage: r.usage, raw: r.raw })
-        rec.injected = verdictLine(r.probs)
-        output.output = `${output.output}${rec.injected}`
-      } catch (e) {
-        rec.latency_ms = Math.round(performance.now() - t0)
-        rec.error = String(e)
+      Object.assign(rec, await askCritic(CRITIC, state))
+      if (rec.probs) {
+        rec.injected = verdictLine(rec.probs)
+        output.output = `${original}${rec.injected}`
       }
     }
-    const hist = recent.get(input.sessionID) || []
-    hist.push({ tool: input.tool, args: input.args, output: truncate(original, T.recent_output_chars, 0).text })
-    recent.set(input.sessionID, hist.slice(-T.recent_calls))
+    remember(input.sessionID, input.tool, input.args, original)
     appendFileSync(LOG, JSON.stringify(rec) + "\n")
   },
 })
