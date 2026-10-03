@@ -18,13 +18,13 @@ Research prototype: reduce LLM tool-calling hallucination by verifying each (too
 - Claim: a System One critic is faster/cheaper with fewer critic errors than a small-LLM critic.
 - Harness: OpenCode. Agent model: `gpt-6-luna` via CallMissed.
 - Arms: A no critic | B small-LLM critic | C Cloudflare Clef (`@cf/cloudflare/clef`, Jev-API-compatible; see `.research/04-cloudflare-clef/`).
-- Haiku is NOT available as a text LLM on CallMissed (voice-only). Arm B model is pending user choice.
+- Haiku is NOT available as a text LLM on CallMissed (voice-only); user chose CallMissed-only critics.
 - Benchmark: Terminal-Bench 2.0 (89 tasks) via Harbor's built-in opencode agent (`.research/03-benchmark-selection/`). Needs Docker + WSL2.
 - Judge: Opus subagent, blinded to arm. Validate against a human-labelled sample.
 
 - Arm B critic = `gpt-5-mini` (CallMissed, OpenAI-compatible base `https://api.callmissed.com/v1`). gpt-4o + clef-flash evaluated offline via replay.
 - Full plan: `.research/05-experiment-plan.md` (RQs, arms, architecture, files, judging, stats, phases).
-- Injection point: OpenCode plugin hook `tool.execute.after` (verified in plugin types). Whether output mutation reaches the model is unverified.
+- Injection point: OpenCode plugin hook `tool.execute.after` (verified; mutated output is what OpenCode records as the tool result).
 
 ## Phase 0 (done 2026-10-03)
 - Harbor 0.23.0 in WSL; TB2 (89 tasks: 4 easy/55 medium/30 hard) downloaded to WSL ~/datasets/terminal-bench.
