@@ -194,6 +194,7 @@ Note: the Clef free tier (10k neurons/day ≈ 0.46M input tokens/day [per subage
 | Date | Version | Change | Reason |
 |---|---|---|---|
 | 2026-10-03 | draft | initial plan | — |
+| 2026-10-03 | draft | Evidence policy: runs append-only in `runs/<ts>_<arm>/` with `MANIFEST.sha256` + pinned versions; raw data published as dataset (HF/Zenodo), code on GitHub; no upstream forks unless patching is required | user requirement: never lose evidence, reproducible public repo |
 
 ## 15. Open items (must resolve in Phase 0)
 
