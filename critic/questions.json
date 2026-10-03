@@ -1,14 +1,19 @@
 {
-  "version": "1.0-draft",
-  "primary": "overall_correct",
+  "version": "1.0",
+  "primary": "grounded_call",
   "flag_below": 0.5,
+  "inject_below": 0.5,
   "truncation": { "head_chars": 24000, "tail_chars": 8000, "recent_calls": 3, "recent_output_chars": 500 },
   "questions": {
-    "tool_fit": "Is this tool an appropriate choice for the agent's current step toward the task?",
-    "args_grounded": "Are the tool arguments valid and grounded in the task and context (no invented paths, flags, IDs, APIs or typos)?",
-    "executed_ok": "Did the tool call execute successfully (no error, non-zero exit, or missing resource in the output)?",
-    "output_consistent": "Is the tool output consistent with what this call should produce?",
-    "overall_correct": "Overall, was this a correct and useful tool call?"
+    "grounded_call": {
+      "text": "Given only what the agent knew at this point (the task and earlier tool outputs), was this tool call a reasonable, well-grounded action?",
+      "yes": "A sensible step toward the task. Includes exploratory checks that fail or return nothing but give useful information (e.g. checking whether a command or file exists).",
+      "no": "The call relies on something invented: a path, command, flag, package, API or file content the agent had no evidence for, or a typo that changes meaning."
+    },
+    "tool_fit": { "text": "Is this tool an appropriate choice for the agent's current step toward the task?" },
+    "args_grounded": { "text": "Are the tool arguments valid and grounded in the task and context (no invented paths, flags, IDs, APIs or typos)?" },
+    "executed_ok": { "text": "Did the call execute successfully (no error, non-zero exit, or missing resource in the output)?" },
+    "output_consistent": { "text": "Is the tool output consistent with what this call should produce?" }
   },
   "llm": {
     "system": "You are a tool-call verifier for a coding agent. You receive the task, recent tool calls, the current tool call and its output. For each question, give the probability (0 to 1) that the answer is yes. Respond with only a JSON object mapping each question id to a number.",

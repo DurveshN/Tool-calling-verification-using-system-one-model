@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
-MENTION_RE = re.compile(r"^.*(tool-check|P\(correct\)).*$", re.IGNORECASE | re.MULTILINE)
+MENTION_RE = re.compile(r"^.*(tool-check|P\(correct\)|P\(grounded_call\)|possible hallucination).*$", re.IGNORECASE | re.MULTILINE)
 HEAD, TAIL = 4000, 2000
 MAX_PART = 150_000
 

@@ -1,5 +1,6 @@
 // OpenCode plugin: post-tool-call critic. Only one export: OpenCode loads every exported function as a plugin.
 // CRITIC_MODE: none (log critic input only) | llm (CRITIC_LLM_MODEL via CallMissed) | clef | clef-flash.
+// The verdict is injected only when P(primary) < inject_below (alert-only policy, v1.0).
 // Every tool call appends one JSON record to $CRITIC_LOG (default: <harbor agent logs>/critic.jsonl).
 // Shared logic lives in ../critic/core.js (same relative path in the repo and in ~/.config/opencode).
 import { appendFileSync } from "node:fs"
@@ -50,7 +51,7 @@ export const CriticPlugin = async () => ({
     }
     if (MODE !== "none") {
       Object.assign(rec, await askCritic(CRITIC, state))
-      if (rec.probs) {
+      if (rec.probs && rec.probs[CFG.primary] < CFG.inject_below) {
         rec.injected = verdictLine(rec.probs)
         output.output = `${original}${rec.injected}`
       }

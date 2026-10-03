@@ -38,7 +38,12 @@ async function post(url, body, key) {
 }
 
 async function askClef(state, model) {
-  const questions = Object.fromEntries(Object.entries(CFG.questions).map(([id, q]) => [id, { type: "noul", instructions: q }]))
+  const questions = Object.fromEntries(
+    Object.entries(CFG.questions).map(([id, q]) => [
+      id,
+      { type: "noul", instructions: q.text, ...(q.yes ? { criteria: { true: q.yes, false: q.no } } : {}) },
+    ]),
+  )
   const r = await post(
     `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/ai/run/@cf/cloudflare/${model}`,
     { model, state, questions },
@@ -48,7 +53,10 @@ async function askClef(state, model) {
 }
 
 async function askLLM(state, model) {
-  const qs = Object.entries(CFG.questions).map(([id, q]) => `${id}: ${q}`).join("\n")
+  // Same information as Clef receives: question text plus yes/no criteria where defined.
+  const qs = Object.entries(CFG.questions)
+    .map(([id, q]) => `${id}: ${q.text}${q.yes ? `\n  yes means: ${q.yes}\n  no means: ${q.no}` : ""}`)
+    .join("\n")
   const body = {
     model,
     response_format: { type: "json_object" },
@@ -79,5 +87,5 @@ export function verdictLine(probs) {
   const flags = Object.entries(probs)
     .filter(([id, p]) => id !== CFG.primary && p < CFG.flag_below)
     .map(([id, p]) => `${id}=${p.toFixed(2)}`)
-  return `\n\n[tool-check] P(correct)=${probs[CFG.primary].toFixed(2)}${flags.length ? `  flags: ${flags.join(", ")}` : ""}`
+  return `\n\n[tool-check] possible hallucination: P(${CFG.primary})=${probs[CFG.primary].toFixed(2)}${flags.length ? `  flags: ${flags.join(", ")}` : ""}`
 }
