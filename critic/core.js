@@ -25,16 +25,26 @@ export function recentEntry(tool, args, output) {
   return { tool, args, output: truncate(output, T.recent_output_chars, 0).text }
 }
 
-async function post(url, body, key) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  })
-  const json = await res.json()
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${JSON.stringify(json).slice(0, 500)}`)
-  return json
+// One retry on network errors and HTTP 5xx/429 (transient); other HTTP errors fail immediately.
+async function post(url, body, key, attempt = 0) {
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      const err = new Error(`HTTP ${res.status}: ${JSON.stringify(json).slice(0, 500)}`)
+      err.retryable = res.status >= 500 || res.status === 429
+      throw err
+    }
+    return json
+  } catch (e) {
+    if (attempt === 0 && e.retryable !== false && e.name !== "TimeoutError") return post(url, body, key, 1)
+    throw e
+  }
 }
 
 async function askClef(state, model) {
