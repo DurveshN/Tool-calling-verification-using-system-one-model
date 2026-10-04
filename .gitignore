@@ -12,3 +12,6 @@ node_modules/
 __pycache__/
 .venv/
 *.pyc
+
+# Crash dumps from Git Bash on Windows
+*.stackdump
