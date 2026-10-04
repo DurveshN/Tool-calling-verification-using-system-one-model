@@ -91,3 +91,23 @@ Runs: `runs/20261003T205115Z_A` (commit 977b754), `runs/20261004T053418Z_B` (977
 1. Critic, questions, runner and rubric as of the freeze commit.
 2. Main run on all 89 tasks × 3 arms, **interleaved by task batches** (each batch runs A, B, C back to back) so time-of-day/API drift does not confound arms and partial results stay balanced if a run stops.
 3. Primary analysis = call-level (RQ1 critic quality vs judge labels; hallucinations per call). Task pass rate is secondary, reported with McNemar plus an explicit power caveat.
+
+## Pilot 2: judged results (Opus judge, 1043 calls; tables in `results/pilot2/summary.md`)
+
+**Agent effect (strict hallucinations per task):** A 6.8, B 1.2, C 2.0. Without the runaway task path-tracing-reverse: A 2.5, B 1.2, C 1.5. n = 5 tasks, 1 run: not statistically meaningful.
+
+**Critic quality, offline replay on identical inputs (all 1043 calls, 50 strict positives):**
+
+| critic | AUROC | ECE | recall@0.5 | false-alarm@0.5 | latency p50 |
+|---|---|---|---|---|---|
+| clef-flash | 0.723 | 0.303 | 0.20 | 0.082 | 514 ms |
+| clef | 0.715 | 0.316 | 0.38 | 0.225 | 752 ms |
+| gpt-4o (n=891, replay incomplete) | 0.654 | 0.048 | 0.08 | 0.022 | 866 ms |
+| gpt-5-mini | 0.617 | 0.102 | 0.24 | 0.102 | 1924 ms |
+
+**Test-retest on identical input (online verdict vs replay):** clef mean |ΔP| = 0.000, 0 verdict flips / 214. gpt-5-mini mean |ΔP| = 0.080, max 0.92, **14 verdict flips / 234 (6.0%)**.
+
+Signals for the main run [Inference, small n, single unvalidated judge]:
+1. System-One critics ranked hallucinations better (AUROC ~0.72 vs 0.62–0.65) and were faster.
+2. System-One critics are deterministic. The LLM critic changed its verdict on 6% of identical inputs.
+3. System-One probabilities are poorly calibrated (ECE ~0.30 vs 0.05–0.10). Raw P(grounded) should not be read as a probability without recalibration, which supports the planned calibration analysis.
