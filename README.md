@@ -21,4 +21,4 @@ Research prototype comparing a System-One model critic (Cloudflare Clef) with a 
 Runs are never deleted or overwritten. Each run lives in `runs/<timestamp>_<arm>/` with a `MANIFEST.sha256`. Upstream versions (OpenCode, Harbor, dataset) are pinned and recorded per run.
 
 ## Secrets
-Set via environment only: `CALLMISSED_API_KEY`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`.
+Set via `.env` only (never committed): `CALLMISSED_API_KEY` (agent), `CALLMISSED_CRITIC_API_KEY` (live critic), `CALLMISSED_REPLAY_API_KEY` (offline replay), `CF_ACCOUNT_ID`, `CF_API_TOKEN`. The critic and replay keys fall back to the agent key.

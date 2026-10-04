@@ -33,5 +33,11 @@ Research prototype: reduce LLM tool-calling hallucination by verifying each (too
 - Smoke runs on fix-git: A, B, C all reward 1.0. Two invalid runs kept with INVALID.md.
 - WSL /mnt/e cwd glitch → runner cds to $HOME.
 
+## Pilots (2026-10-03/04)
+- Pilot 1 → design fixes (grounded_call question, alert-only, errored-call logging, setup retries). Report: `.research/06-pilot-report.md`.
+- Pilot 2 judged (Opus, 1043 calls): strict hallucinations/task A 6.8, B 1.2, C 2.0 (loop task dominates; without it 2.5/1.2/1.5). Tables: `results/pilot2/summary.md`.
+- CallMissed limit: 60 req/min per key → one key per role.
+
+## Status: plan FROZEN v1.0 (git tag v1.0)
 ## Next
-Phase 1 remainder: scripts/collect.py, to_markdown.py. Then Phase 2 pilot (5 tasks × 3 arms).
+User adds `CALLMISSED_CRITIC_API_KEY` and `CALLMISSED_REPLAY_API_KEY` to `.env` → launch `scripts/run_main.sh` detached in WSL (2 concurrent). Then replay, judge (Sonnet), analyze, human κ sample.

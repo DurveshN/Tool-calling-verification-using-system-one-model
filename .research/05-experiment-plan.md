@@ -1,6 +1,29 @@
 # Experiment Plan: System-One Critic vs Small-LLM Critic for Tool-Call Hallucination
 
-Status: DRAFT v1 (2026-10-03). Freeze this as v1.0 before any non-pilot run. Record every later change in §14.
+Status: **FROZEN v1.0 (2026-10-04, git tag `v1.0`)**. Approved by the user after pilot 2. Any later change must be recorded in §14 with a reason; changes after the main run starts are deviations and are reported as such.
+
+## 0. Frozen v1.0 configuration (overrides earlier sections where they differ)
+
+| Item | Frozen value |
+|---|---|
+| Benchmark | Terminal-Bench 2.0, all 89 tasks, local copy sha256 `561f0e32…`; order = `configs/main_tasks.txt` (seed 20261004) |
+| Execution | `scripts/run_main.sh`: batches of 10; each batch runs A, B, C back to back, arm order rotated per batch; 2 concurrent trials; TB default timeouts; setup timeout ×3, retry only `AgentSetupTimeoutError` |
+| Agent | OpenCode 1.18.34 via Harbor 0.23.0, model `callmissed/gpt-6-luna` |
+| Arms | A: no critic (plugin logs critic input only) · B: `gpt-5-mini` (reasoning_effort minimal, JSON mode) · C: `@cf/cloudflare/clef` |
+| Critic input | `critic/core.js` + `critic/questions.json` v1.0: task, last 3 calls (500 chars each), call, output (24k head + 8k tail chars) |
+| Primary critic question | `grounded_call`, with yes/no criteria (Clef native `criteria`; same text inline for the LLM) + 4 diagnostic questions |
+| Injection | alert-only: `[tool-check] possible hallucination: P(grounded_call)=…` when P < 0.5 |
+| API keys | one key per role: agent / live critic / replay (fingerprints recorded in provenance) |
+| Judge | blinded, rubric `judge/rubric.md` v1.0, one subagent per packet part (≤150k chars). Main-run judge model: Sonnet (user instruction 2026-10-04); pilot-2 labels were Opus |
+| Outcome definitions | strict hallucination = {fabricated_tool, bad_args, misread_output, wrong_tool, schema_violation}; broad error = strict + {trajectory_error, unnecessary_call}; message-level false/unsupported claims reported separately |
+
+**Primary analyses (pre-registered):**
+1. RQ1, critic quality: offline replay of every main-run call through gpt-5-mini, gpt-4o, clef, clef-flash. AUROC, ECE, recall/precision/false-alarm at 0.5 vs strict label; latency p50/p95; cost per 1k checks. H1c non-inferiority margin 0.05 (Clef vs gpt-5-mini AUROC), paired bootstrap by task.
+2. RQ2, agent effect: strict hallucinations per task and per call, A vs B, A vs C, B vs C, paired by task, cluster bootstrap 95% CI. Also reported excluding tasks that hit the agent timeout (runaway loops).
+3. Secondary: pass rate (exact McNemar, Holm); broad errors; message-level false claims; calls per task; agent + critic cost; wall time.
+4. Mechanism (exploratory): share of strict hallucinations preceded/flagged by an alert; behaviour in the 3 calls after an alert.
+5. Judge validity: human labels on a stratified sample of 150 calls, Cohen's κ (target ≥ 0.6).
+
 Labels: [V] = verified from source this session, [U] = unverified, [I] = inference.
 
 ---
@@ -74,7 +97,7 @@ Harbor (WSL2 + Docker)
 | `scripts/analyze.py` | metrics + statistics (§9–10) → `results/*.csv`, figures |
 | `runs/{arm}/{task}/` | raw outputs (gitignored) |
 
-Secrets are kept only in env vars (`CALLMISSED_API_KEY`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`), never in files.
+Secrets are kept only in env vars (`CALLMISSED_API_KEY`, `CALLMISSED_CRITIC_API_KEY`, `CALLMISSED_REPLAY_API_KEY`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`), never in files.
 
 ### CallMissed as an OpenCode provider
 `opencode_config` overlay [V that the overlay mechanism exists; exact provider schema U]:
@@ -198,6 +221,7 @@ Note: the Clef free tier (10k neurons/day ≈ 0.46M input tokens/day [per subage
 | 2026-10-03 | draft | Phase 0 decisions: (1) plugin runs in ALL arms; arm A = CRITIC_MODE=none logs exact critic input without calling a critic, and replay reuses the logged inputs; (2) LLM critic uses `reasoning_effort: minimal` + JSON mode (1.5 s vs 4 s default); (3) CallMissed returns `logprobs: null`, so LLM probabilities are verbalized; (4) Clef `questions` is a map keyed by id; (5) OpenCode pinned 1.18.34, Harbor 0.23.0, TB2 local copy sha256 561f0e32…; (6) runner refuses dirty git tree | Phase 0 feasibility results |
 | 2026-10-04 | 1.0-rc | User-approved after pilot (see 06-pilot-report.md): (1) primary question `grounded_call` replaces `overall_correct` (pilot showed failed-but-informative exploration was flagged); (2) alert-only injection when P(grounded_call) < 0.5; (3) Terminal-Bench default timeouts kept; (4) re-pilot (phase=pilot2) on the same 5 tasks before the main run. Also: yes/no `criteria` added to the primary question (Clef native `criteria` field; same text given inline to the LLM critic). Chosen on 4 synthetic cases only, before any main-run data. Errored tool calls now logged for replay; setup timeouts retried | pilot findings F1–F5 |
 | 2026-10-04 | 1.0-rc2 | Pilot 2 done (06-pilot-report.md §Pilot 2): flag rate 12%→5% (B), 25%→7.5% (C); critic retries once on network/5xx/429; judge rubric v1.0 committed; detached launcher added. Proposed: batch-interleaved main run, call-level primary analysis | pilot2 findings P1–P6 |
+| 2026-10-04 | **1.0 (frozen)** | User approved freeze after pilot-2 judged analysis (results/pilot2/summary.md). Added: §0 frozen configuration; one CallMissed key per role (agent / critic / replay) to remove rate-limit interference between agent and critic in arm B; batch-interleaved, resumable `run_main.sh`; seeded task order `configs/main_tasks.txt`; Sonnet as main-run judge | pilot 2 + user decisions |
 
 ## 15. Open items (must resolve in Phase 0)
 

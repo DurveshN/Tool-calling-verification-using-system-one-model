@@ -92,7 +92,9 @@ async function askLLM(state, model) {
     ],
   }
   if (model.startsWith("gpt-5")) body.reasoning_effort = "minimal"
-  const r = await post("https://api.callmissed.com/v1/chat/completions", body, process.env.CALLMISSED_API_KEY)
+  // Dedicated critic key (own 60 req/min budget, separate from the agent); falls back to the agent key.
+  const key = process.env.CALLMISSED_CRITIC_API_KEY || process.env.CALLMISSED_API_KEY
+  const r = await post("https://api.callmissed.com/v1/chat/completions", body, key)
   const content = r.choices[0].message.content
   const parsed = JSON.parse(content)
   return { probs: Object.fromEntries(Object.keys(CFG.questions).map((id) => [id, Number(parsed[id])])), usage: r.usage, raw: content }

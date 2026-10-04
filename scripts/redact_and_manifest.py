@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 
-SECRET_VARS = ("CALLMISSED_API_KEY", "CF_API_TOKEN", "CF_ACCOUNT_ID")
+SECRET_VARS = ("CALLMISSED_API_KEY", "CALLMISSED_CRITIC_API_KEY", "CALLMISSED_REPLAY_API_KEY", "CF_API_TOKEN", "CF_ACCOUNT_ID")
 
 
 def main(run_dir: Path) -> None:

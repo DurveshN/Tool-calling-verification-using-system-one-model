@@ -15,6 +15,8 @@ const { values: opt } = parseArgs({
     out: { type: "string", default: "data/replay.jsonl" },
   },
 })
+// Replay uses its own key so it never competes with live runs for rate limit.
+if (process.env.CALLMISSED_REPLAY_API_KEY) process.env.CALLMISSED_CRITIC_API_KEY = process.env.CALLMISSED_REPLAY_API_KEY
 const CRITICS = opt.critics.split(",")
 const OUT = opt.out
 const readJsonl = (p) => (existsSync(p) ? readFileSync(p, "utf8").split("\n").filter(Boolean).map(JSON.parse) : [])

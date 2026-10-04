@@ -33,13 +33,16 @@ JSON
 
 # Provenance (no secrets).
 {
-  echo "phase=$PHASE"; echo "arm=$ARM"; echo "critic_mode=$CRITIC_MODE"; echo "agent_model=callmissed/$AGENT_MODEL"
+  echo "phase=$PHASE"; echo "batch=${BATCH_ID:-}"; echo "arm=$ARM"; echo "critic_mode=$CRITIC_MODE"; echo "agent_model=callmissed/$AGENT_MODEL"
   echo "dataset_dir=$DATASET_DIR"
   echo "dataset_sha256=$(cd "$DATASET_DIR/.." && find "$(basename "$DATASET_DIR")" -type f | sort | xargs -d '\n' sha256sum | sha256sum | cut -d' ' -f1)"
   echo "opencode_version=${OPENCODE_VERSION:-latest}"
   echo "harbor_version=$(harbor --version 2>/dev/null)"
   echo "git_commit=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null)"
   echo "git_dirty=$(git -C "$ROOT" status --porcelain | wc -l)"
+  fp() { printf '%s' "$1" | sha256sum | cut -c1-8; }  # key fingerprint, not the key
+  echo "agent_key_fp=$(fp "$CALLMISSED_API_KEY")"
+  echo "critic_key_fp=$(fp "${CALLMISSED_CRITIC_API_KEY:-$CALLMISSED_API_KEY}")"
   echo "started_utc=$(date -u +%FT%TZ)"
   echo "extra_args=$*"
 } > "$RUN_DIR/provenance.txt"
@@ -53,6 +56,7 @@ harbor run -y \
   -a harbor_ext.opencode_critic:OpenCodeCritic -m "callmissed/$AGENT_MODEL" \
   --ak "opencode_config=$OPENCODE_CONFIG" "${VERSION_ARGS[@]}" \
   --ae "CALLMISSED_API_KEY=$CALLMISSED_API_KEY" \
+  --ae "CALLMISSED_CRITIC_API_KEY=${CALLMISSED_CRITIC_API_KEY:-$CALLMISSED_API_KEY}" \
   --ae "CF_ACCOUNT_ID=$CF_ACCOUNT_ID" --ae "CF_API_TOKEN=$CF_API_TOKEN" \
   --ae "CRITIC_MODE=$CRITIC_MODE" \
   --allow-agent-host api.callmissed.com --allow-agent-host api.cloudflare.com \
