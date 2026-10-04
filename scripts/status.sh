@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Progress of the main run: batches/arms done, trials finished, pass counts, critic errors.
 # Usage on the host: bash scripts/status.sh   (from this PC: ssh -i ~/.ssh/research_vm researcher@<ip> 'bash ~/prototype/scripts/status.sh')
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="${ROOT:-$HOME/prototype}"  # repo checkout on the host
 echo "now: $(date -u +%FT%TZ)  running: $(pgrep -fc 'scripts/run_main.sh') runner(s)"
 grep -E "^=== " ~/main.log 2>/dev/null | tail -4
 python3 - "$ROOT" <<'EOF'
