@@ -1,6 +1,6 @@
 // Phase 2 offline replay: score every logged tool call with every critic on the exact logged critic input.
 // Append-only and resumable: data/replay.jsonl is keyed by run|trial|call_id|critic; existing keys are skipped.
-// Usage (repo root, .env loaded): node scripts/replay.mjs [--critics gpt-5-mini,gpt-4o,clef,clef-flash] [--phase main] [--concurrency 4]
+// Usage (repo root, .env loaded): node scripts/replay.mjs [--critics gpt-5-mini,gpt-4o,clef,clef-flash] [--phase main] [--concurrency 4] [--llm-rpm 40]
 import { appendFileSync, existsSync, readFileSync } from "node:fs"
 import { parseArgs } from "node:util"
 import { askCritic, CFG } from "../critic/core.js"
@@ -11,6 +11,7 @@ const { values: opt } = parseArgs({
     phase: { type: "string" },
     concurrency: { type: "string", default: "4" },
     limit: { type: "string" },
+    "llm-rpm": { type: "string", default: "40" },
     out: { type: "string", default: "data/replay.jsonl" },
   },
 })
@@ -29,10 +30,20 @@ for (const c of readJsonl("data/calls.jsonl")) {
 if (opt.limit) jobs.splice(Number(opt.limit))
 console.log(`replay jobs: ${jobs.length} (critics: ${CRITICS.join(", ")}, already done: ${done.size})`)
 
+// CallMissed allows 60 req/min per key: space LLM critic calls to --llm-rpm (Clef is not paced).
+const LLM_GAP_MS = 60000 / Number(opt["llm-rpm"])
+let nextLlmSlot = 0
+async function llmSlot() {
+  const now = Date.now(), at = Math.max(now, nextLlmSlot)
+  nextLlmSlot = at + LLM_GAP_MS
+  if (at > now) await new Promise((r) => setTimeout(r, at - now))
+}
+
 let next = 0, ok = 0, fail = 0
 async function worker() {
   while (next < jobs.length) {
     const { c, critic } = jobs[next++]
+    if (!critic.startsWith("clef")) await llmSlot()
     const r = await askCritic(critic, c.critic_state)
     appendFileSync(OUT, JSON.stringify({
       ts: new Date().toISOString(), config_version: CFG.version, phase: c.phase, run: c.run, arm: c.arm,

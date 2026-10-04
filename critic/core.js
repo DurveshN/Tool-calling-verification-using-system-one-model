@@ -25,7 +25,10 @@ export function recentEntry(tool, args, output) {
   return { tool, args, output: truncate(output, T.recent_output_chars, 0).text }
 }
 
-// One retry on network errors and HTTP 5xx/429 (transient); other HTTP errors fail immediately.
+// Retries: HTTP 429 up to 3 times with 2/4/8 s backoff (CallMissed limit: 60 req/min per key);
+// network errors, 5xx and non-JSON error pages once. Auth/other 4xx and timeouts fail immediately.
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
 async function post(url, body, key, attempt = 0) {
   try {
     const res = await fetch(url, {
@@ -34,15 +37,28 @@ async function post(url, body, key, attempt = 0) {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
-    const json = await res.json()
+    const text = await res.text()
+    let json
+    try {
+      json = JSON.parse(text)
+    } catch {
+      const err = new Error(`HTTP ${res.status}: non-JSON response: ${text.slice(0, 200)}`)
+      err.retry = "once"
+      throw err
+    }
     if (!res.ok) {
       const err = new Error(`HTTP ${res.status}: ${JSON.stringify(json).slice(0, 500)}`)
-      err.retryable = res.status >= 500 || res.status === 429
+      err.retry = res.status === 429 ? "backoff" : res.status >= 500 ? "once" : "never"
       throw err
     }
     return json
   } catch (e) {
-    if (attempt === 0 && e.retryable !== false && e.name !== "TimeoutError") return post(url, body, key, 1)
+    const retry = e.retry ?? (e.name === "TimeoutError" ? "never" : "once") // undefined = network error
+    if (retry === "backoff" && attempt < 3) {
+      await sleep(2000 * 2 ** attempt)
+      return post(url, body, key, attempt + 1)
+    }
+    if (retry === "once" && attempt === 0) return post(url, body, key, 1)
     throw e
   }
 }
