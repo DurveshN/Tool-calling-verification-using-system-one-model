@@ -38,6 +38,15 @@ Research prototype: reduce LLM tool-calling hallucination by verifying each (too
 - Pilot 2 judged (Opus, 1043 calls): strict hallucinations/task A 6.8, B 1.2, C 2.0 (loop task dominates; without it 2.5/1.2/1.5). Tables: `results/pilot2/summary.md`.
 - CallMissed limit: 60 req/min per key → one key per role.
 
-## Status: plan FROZEN v1.0 (git tag v1.0)
+## Status: plan FROZEN v1.0 (git tag v1.0); MAIN RUN STARTED 2026-10-04 14:24Z on Azure
+- GitHub: https://github.com/DurveshN/Tool-calling-verification-using-system-one-model (public)
+- Azure: RG `research-paper` (centralindia), VM `research-vm` Standard_DC8as_v5 (8 vCPU/32 GB, confidential Ubuntu 24.04, 512 GB), $0.222/h. IP 20.204.118.246, user `researcher`, key `~/.ssh/research_vm`, SSH allowed only from 106.213.84.16.
+- VM provisioned by `scripts/setup_vm.sh`; dataset hash verified identical; latency to CallMissed and Cloudflare ~28 ms.
+- Kimi considered and rejected by user (keep GPT models).
+- VM smoke test (phase=smoke_vm, 2 tasks × 3 arms) passed; per-role key fingerprints: agent 7657643f, critic 466458a0.
+- Main: `run_main.sh` detached on VM, log `~/main.log`; progress: `ssh -i ~/.ssh/research_vm researcher@20.204.118.246 'bash ~/status.sh'`.
+- Do NOT pull new commits on the VM during the main run.
+
 ## Next
-User adds `CALLMISSED_CRITIC_API_KEY` and `CALLMISSED_REPLAY_API_KEY` to `.env` → launch `scripts/run_main.sh` detached in WSL (2 concurrent). Then replay, judge (Sonnet), analyze, human κ sample.
+Monitor → rsync runs/ back → collect → replay (replay key) → judge (Sonnet) → analyze → human κ sample (150 calls).
+After evidence is safely copied: `az group delete -n research-paper` (user decision).
