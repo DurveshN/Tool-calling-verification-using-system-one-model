@@ -37,10 +37,10 @@ Labelled calls: 1043 / 1043
 |---|---|---|---|---|---|---|---|---|
 | gpt-5-mini | online, arm B | 234 | 6 | 0.787 | 0.071 | 0.167 | 0.091 | 0.044 |
 | clef | online, arm C | 214 | 10 | 0.801 | 0.258 | 0.000 | 0.000 | 0.078 |
-| clef | replay, all arms (p50 783 ms) | 454 | 22 | 0.596 | 0.355 | 0.227 | 0.031 | 0.359 |
-| clef-flash | replay, all arms (p50 520 ms) | 454 | 22 | 0.671 | 0.301 | 0.136 | 0.068 | 0.095 |
-| gpt-4o | replay, all arms (p50 923 ms) | 110 | 1 | 0.321 | 0.070 | 0.000 | 0.000 | 0.018 |
-| gpt-5-mini | replay, all arms (p50 1813 ms) | 161 | 4 | 0.248 | 0.200 | 0.000 | 0.000 | 0.204 |
+| clef | replay, all arms (p50 780 ms) | 513 | 27 | 0.634 | 0.349 | 0.370 | 0.057 | 0.340 |
+| clef-flash | replay, all arms (p50 518 ms) | 513 | 27 | 0.715 | 0.300 | 0.185 | 0.100 | 0.093 |
+| gpt-4o | replay, all arms (p50 986 ms) | 133 | 3 | 0.544 | 0.068 | 0.000 | 0.000 | 0.023 |
+| gpt-5-mini | replay, all arms (p50 1845 ms) | 181 | 7 | 0.350 | 0.172 | 0.143 | 0.030 | 0.184 |
 
 Strict = ['bad_args', 'fabricated_tool', 'misread_output', 'schema_violation', 'wrong_tool']; broad adds trajectory_error, unnecessary_call.
 Labels come from a single blinded Opus judge, not yet validated against human labels.
