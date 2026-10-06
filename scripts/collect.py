@@ -31,7 +31,7 @@ def secs(span: dict | None) -> float | None:
 
 
 def read_jsonl(path: Path) -> list[dict]:
-    return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()] if path.exists() else []
+    return [json.loads(l) for l in path.read_text(encoding="utf-8").split("\n") if l.strip()] if path.exists() else []
 
 
 def provenance(run: Path) -> dict:
@@ -47,7 +47,7 @@ def tool_status(trial: Path) -> dict[str, tuple[str, str | None]]:
     """callID -> (final status, error text) from OpenCode's raw event stream (Harbor's trajectory drops errors)."""
     status: dict[str, tuple[str, str | None]] = {}
     f = trial / "agent" / "opencode.txt"
-    for line in f.read_text(encoding="utf-8", errors="replace").splitlines() if f.exists() else []:
+    for line in f.read_text(encoding="utf-8", errors="replace").split("\n") if f.exists() else []:
         try:
             part = json.loads(line).get("part") or {}
         except json.JSONDecodeError:

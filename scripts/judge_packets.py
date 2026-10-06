@@ -74,10 +74,10 @@ def main() -> None:
     ap.add_argument("--tasks", help="file with task names to include (default: all tasks in the phase)")
     a = ap.parse_args()
     keep = set(Path(a.tasks).read_text(encoding="utf-8").split()) if a.tasks else None
-    tasks = [t for t in map(json.loads, (DATA / "tasks.jsonl").read_text(encoding="utf-8").splitlines())
+    tasks = [t for t in map(json.loads, filter(str.strip, (DATA / "tasks.jsonl").read_text(encoding="utf-8").split("\n")))
              if t["phase"] == a.phase and t["n_tool_calls"] > 0 and (keep is None or t["task"] in keep)]
     calls: dict[tuple, dict] = {}
-    for c in map(json.loads, (DATA / "calls.jsonl").read_text(encoding="utf-8").splitlines()):
+    for c in map(json.loads, filter(str.strip, (DATA / "calls.jsonl").read_text(encoding="utf-8").split("\n"))):
         calls.setdefault((c["run"], c["trial"]), {})[c["call_id"]] = c
     out_dir = DATA / "judge" / a.phase
     (out_dir / "packets").mkdir(parents=True, exist_ok=True)

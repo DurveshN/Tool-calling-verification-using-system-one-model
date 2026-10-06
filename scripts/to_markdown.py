@@ -48,9 +48,9 @@ def render(task: dict, calls: dict[str, dict], traj: dict) -> str:
 
 
 def main() -> None:
-    tasks = [json.loads(l) for l in (DATA / "tasks.jsonl").read_text(encoding="utf-8").splitlines() if l]
+    tasks = [json.loads(l) for l in (DATA / "tasks.jsonl").read_text(encoding="utf-8").split("\n") if l.strip()]
     calls_by_trial: dict[tuple, dict] = {}
-    for l in (DATA / "calls.jsonl").read_text(encoding="utf-8").splitlines():
+    for l in filter(str.strip, (DATA / "calls.jsonl").read_text(encoding="utf-8").split("\n")):
         c = json.loads(l)
         calls_by_trial.setdefault((c["run"], c["trial"]), {})[c["call_id"]] = c
     for t in tasks:

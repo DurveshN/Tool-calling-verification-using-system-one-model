@@ -16,7 +16,7 @@ BROAD = STRICT | {"trajectory_error", "unnecessary_call"}
 def labels(d: Path) -> dict[tuple[str, int], str]:
     out = {}
     for f in d.glob("*.jsonl"):
-        for line in f.read_text(encoding="utf-8").splitlines():
+        for line in f.read_text(encoding="utf-8").split("\n"):
             r = json.loads(line) if line.strip() else {}
             if "call" in r and "label" in r:
                 out[(f.stem.split("_p")[0], int(r["call"]))] = r["label"]
