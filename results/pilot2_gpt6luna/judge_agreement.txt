@@ -1,0 +1,5 @@
+calls labelled by both: 1043 (a: 1043, b: 1043)
+strict     agreement 0.975  Cohen's kappa 0.685
+broad      agreement 0.886  Cohen's kappa 0.737
+full label agreement 0.834  Cohen's kappa 0.655
+strict positives: a = 50  b = 36

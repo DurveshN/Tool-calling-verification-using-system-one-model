@@ -2,7 +2,7 @@
 
 Usage: python scripts/analyze.py --phase pilot2 [--out results/pilot2]
 Inputs: data/calls.jsonl, data/tasks.jsonl, data/judge/<phase>/{key.json,labels/*.jsonl}, data/replay.jsonl (optional)
-Outputs: <out>/summary.md (tables, in git) and data/analysis/<phase>/calls_labelled.jsonl (per-call data, not in git)
+Outputs: <out>/summary.md (tables, in git) and data/analysis/<phase>/<labels_dir>/calls_labelled.jsonl (per-call data, not in git)
 """
 import argparse
 import json
@@ -86,8 +86,8 @@ def main() -> None:
         c["strict"] = int(bool(lab) and lab["label"] in STRICT)
         c["broad"] = int(bool(lab) and lab["label"] in BROAD)
     labelled = [c for c in calls if c["judge"]]
-    (DATA / "analysis" / a.phase).mkdir(parents=True, exist_ok=True)
-    (DATA / "analysis" / a.phase / "calls_labelled.jsonl").write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in labelled), encoding="utf-8")
+    (DATA / "analysis" / a.phase / a.labels_dir).mkdir(parents=True, exist_ok=True)
+    (DATA / "analysis" / a.phase / a.labels_dir / "calls_labelled.jsonl").write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in labelled), encoding="utf-8")
 
     md = [f"# Analysis: phase `{a.phase}`", "", f"Labelled calls: {len(labelled)} / {len(calls)}"]
     if missing:

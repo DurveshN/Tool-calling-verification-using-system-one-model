@@ -43,4 +43,4 @@ Labelled calls: 1043 / 1043
 | gpt-5-mini | replay, all arms (p50 1924 ms) | 1041 | 50 | 0.617 | 0.102 | 0.240 | 0.106 | 0.102 |
 
 Strict = ['bad_args', 'fabricated_tool', 'misread_output', 'schema_violation', 'wrong_tool']; broad adds trajectory_error, unnecessary_call.
-Labels come from a single blinded Opus judge, not yet validated against human labels.
+Labels: data/judge/pilot2/labels (single blinded LLM judge; validate against human labels and the second judge).
