@@ -59,6 +59,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--phase", required=True)
     ap.add_argument("--out")
+    ap.add_argument("--labels-dir", default="labels", help="judge label directory under data/judge/<phase>/")
     a = ap.parse_args()
     out = Path(a.out) if a.out else ROOT / "results" / a.phase
     out.mkdir(parents=True, exist_ok=True)
@@ -67,7 +68,7 @@ def main() -> None:
 
     labels, claims, summaries, missing = {}, defaultdict(list), {}, []
     for pid, v in key.items():
-        rows = [r for i in range(1, v["n_parts"] + 1) for r in jsonl(jdir / "labels" / f"{pid}_p{i}.jsonl")]
+        rows = [r for i in range(1, v["n_parts"] + 1) for r in jsonl(jdir / a.labels_dir / f"{pid}_p{i}.jsonl")]
         calls = {r["call"]: r for r in rows if "call" in r and "label" in r}
         if len(calls) != len(v["call_ids"]):
             missing.append(f"{pid} ({v['arm']} {v['task']}): {len(calls)}/{len(v['call_ids'])} calls labelled")
@@ -144,7 +145,7 @@ def main() -> None:
                   f"{fmt(m['recall@0.5'])} | {fmt(m['precision@0.5'])} | {fmt(m['false_alarm_rate'])} |")
 
     md += ["", f"Strict = {sorted(STRICT)}; broad adds trajectory_error, unnecessary_call.",
-           "Labels come from a single blinded Opus judge, not yet validated against human labels."]
+           f"Labels: data/judge/{a.phase}/{a.labels_dir} (single blinded LLM judge; validate against human labels and the second judge)."]
     (out / "summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     print("\n".join(md))
 

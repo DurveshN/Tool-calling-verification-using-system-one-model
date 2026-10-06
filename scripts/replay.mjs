@@ -1,6 +1,7 @@
 // Phase 2 offline replay: score every logged tool call with every critic on the exact logged critic input.
 // Append-only and resumable: data/replay.jsonl is keyed by run|trial|call_id|critic; existing keys are skipped.
 // Usage (repo root, .env loaded): node scripts/replay.mjs [--critics gpt-5-mini,gpt-4o,clef,clef-flash] [--phase main] [--concurrency 4] [--llm-rpm 40]
+import { createHash } from "node:crypto"
 import { appendFileSync, existsSync, readFileSync } from "node:fs"
 import { parseArgs } from "node:util"
 import { askCritic, CFG } from "../critic/core.js"
@@ -11,6 +12,8 @@ const { values: opt } = parseArgs({
     phase: { type: "string" },
     concurrency: { type: "string", default: "4" },
     limit: { type: "string" },
+    sample: { type: "string" }, // replay only N calls, chosen by seeded hash (stable across reruns)
+    seed: { type: "string", default: "20261006" },
     "llm-rpm": { type: "string", default: "40" },
     out: { type: "string", default: "data/replay.jsonl" },
   },
@@ -22,9 +25,13 @@ const OUT = opt.out
 const readJsonl = (p) => (existsSync(p) ? readFileSync(p, "utf8").split("\n").filter(Boolean).map(JSON.parse) : [])
 
 const done = new Set(readJsonl(OUT).filter((r) => !r.error).map((r) => `${r.run}|${r.trial}|${r.call_id}|${r.critic_model}`))
+let calls = readJsonl("data/calls.jsonl").filter((c) => c.critic_state && (!opt.phase || c.phase === opt.phase))
+if (opt.sample) {
+  const rank = (c) => createHash("sha256").update(`${opt.seed}|${c.run}|${c.trial}|${c.call_id}`).digest("hex")
+  calls = calls.map((c) => [rank(c), c]).sort((x, y) => (x[0] < y[0] ? -1 : 1)).slice(0, Number(opt.sample)).map((x) => x[1])
+}
 const jobs = []
-for (const c of readJsonl("data/calls.jsonl")) {
-  if (!c.critic_state || (opt.phase && c.phase !== opt.phase)) continue
+for (const c of calls) {
   for (const critic of CRITICS) {
     if (!done.has(`${c.run}|${c.trial}|${c.call_id}|${critic}`)) jobs.push({ c, critic })
   }

@@ -71,8 +71,11 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--phase", required=True)
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--tasks", help="file with task names to include (default: all tasks in the phase)")
     a = ap.parse_args()
-    tasks = [t for t in map(json.loads, (DATA / "tasks.jsonl").read_text(encoding="utf-8").splitlines()) if t["phase"] == a.phase and t["n_tool_calls"] > 0]
+    keep = set(Path(a.tasks).read_text(encoding="utf-8").split()) if a.tasks else None
+    tasks = [t for t in map(json.loads, (DATA / "tasks.jsonl").read_text(encoding="utf-8").splitlines())
+             if t["phase"] == a.phase and t["n_tool_calls"] > 0 and (keep is None or t["task"] in keep)]
     calls: dict[tuple, dict] = {}
     for c in map(json.loads, (DATA / "calls.jsonl").read_text(encoding="utf-8").splitlines()):
         calls.setdefault((c["run"], c["trial"]), {})[c["call_id"]] = c
