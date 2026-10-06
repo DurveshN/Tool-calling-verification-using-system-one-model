@@ -47,6 +47,12 @@ Research prototype: reduce LLM tool-calling hallucination by verifying each (too
 - Main: `run_main.sh` detached on VM, log `~/main.log`; progress: `ssh -i ~/.ssh/research_vm researcher@20.204.118.246 'bash ~/status.sh'`.
 - Do NOT pull new commits on the VM during the main run.
 
+## Main run DONE 2026-10-05 22:51Z
+- Pass (secondary outcome): A 22/89, B 31/89, C 31/89. Critic errors total 3. Tool calls: A 8466, B 7469, C 6086 (critic-logged).
+- Evidence pulled to local `runs/` via resumable rsync (WSL `~/pull_runs.sh`). Note: Windows Python can't open >260-char snapshot paths; verify manifests from WSL.
+- Deviations (plan §14): judge = gpt-6-luna via `scripts/judge_llm.py` (labels dir `labels_gpt6luna`), all 89 tasks; gpt-4o replay on a seeded 3,000-call sample.
+- Judge validity: gpt-6-luna vs Opus on pilot 2: strict κ 0.685, broad κ 0.737. gpt-6-luna is more lenient (36 vs 50 strict positives).
+- 2026-10-06: on VM `~/post_main.sh` running judge (`~/judge_main.log`) + replay (`~/replay_main.log`); main = 21,881 calls, 261 packets / 346 parts.
+
 ## Next
-Monitor → rsync runs/ back → collect → replay (replay key) → judge (Sonnet) → analyze → human κ sample (150 calls).
-After evidence is safely copied: `az group delete -n research-paper` (user decision).
+Pull `data/judge/main` + `data/replay.jsonl` from VM → `analyze.py --phase main --labels-dir labels_gpt6luna` → significance tests (McNemar, cluster bootstrap, DeLong/bootstrap AUROC) → human κ sample (150 calls) → paper. Then VM stop/delete (user decision).
