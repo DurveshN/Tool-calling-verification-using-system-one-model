@@ -32,6 +32,15 @@ def load_env() -> None:
             os.environ.setdefault(k.strip(), v.strip().strip('"'))
 
 
+def redact(text: str) -> str:
+    """Never write secret values (e.g. echoed in HTTP client errors) to disk."""
+    for k, v in os.environ.items():
+        if v and len(v) >= 8 and ("KEY" in k or "TOKEN" in k or k == "CF_ACCOUNT_ID"):
+            for val in {v, v.strip()}:
+                text = text.replace(val, f"<REDACTED:{k}>")
+    return text
+
+
 class Pacer:
     def __init__(self, rpm: float):
         self.gap, self.next, self.lock = 60.0 / rpm, 0.0, threading.Lock()
@@ -110,7 +119,7 @@ def judge_part(part: Path, out_dir: Path, rubric: str, model: str, key: str, pac
             (out_dir / f"{part.stem}.meta.json").write_text(json.dumps(
                 {"model": model, "attempts": attempt + 1, "usage": usage_total, "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}))
             return "ok"
-    (out_dir / f"{part.stem}.error").write_text(f"{err}\n", encoding="utf-8")
+    (out_dir / f"{part.stem}.error").write_text(f"{redact(str(err))}\n", encoding="utf-8")
     return "error"
 
 
@@ -124,7 +133,7 @@ def main() -> None:
     ap.add_argument("--limit", type=int, help="judge at most N parts (testing)")
     a = ap.parse_args()
     load_env()
-    key = os.environ.get("CALLMISSED_JUDGE_API_KEY") or os.environ["CALLMISSED_API_KEY"]
+    key = (os.environ.get("CALLMISSED_JUDGE_API_KEY") or os.environ["CALLMISSED_API_KEY"]).strip()  # .env may have CRLF
     jdir = ROOT / "data" / "judge" / a.phase
     out_dir = jdir / a.labels_dir
     out_dir.mkdir(parents=True, exist_ok=True)
