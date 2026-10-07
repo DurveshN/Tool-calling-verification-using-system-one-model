@@ -2,7 +2,7 @@
 
 Date: 2026-10-07. Plan: `.research/05-experiment-plan.md` v1.0 + deviations D1 (judge = gpt-6-luna) and D2 (gpt-4o on a 3,000-call sample).
 Sources: `results/main/summary.md` (descriptives), `results/main/stats.md` (tests), `results/main/test_retest.txt`, `results/pilot2_gpt6luna/judge_agreement.txt`.
-**Status: complete data; judge labels not yet validated by humans** (150-call sheet in `data/human/main/`). Everything below is conditional on the gpt-6-luna judge.
+**Status: complete data. Judge labels cross-checked by an independent LLM annotator (Claude Sonnet), not yet by humans** (150-call blinded sheet `data/human/main/`). Everything below is conditional on the gpt-6-luna judge.
 
 ## Setup recap
 - Agent: OpenCode 1.18.34 + `gpt-6-luna` (CallMissed), Harbor 0.23.0, Azure DC8as_v5, 2 concurrent trials, batch-interleaved arms.
@@ -44,8 +44,15 @@ All calls (n = 21,783, 745 strict hallucinations):
 
 **Interpretation [Inference]:** both critics move the agent in the right direction, with modest evidence. The better *detector* (Clef) did **not** produce a larger *agent* improvement than gpt-5-mini. Plausible reasons to test next: (1) Clef's higher false-alarm rate at 0.5 (13% vs 7.5%) means more alerts on reasonable calls; (2) one run per task gives low power at the task level; (3) alert format and threshold were tuned on 5 pilot tasks only. A calibrated threshold per critic (equal false-alarm rate) is the obvious follow-up experiment.
 
+## Judge validation: independent cross-family annotator (Claude Sonnet), 150 blinded calls
+Sample stratified by judge label (50 strict / 50 broad-only / 50 none, balanced by arm). Sonnet saw the same blinded items as a human would (no arm, no judge label, no critic verdict). Files: `results/main/sonnet_vs_judge_agreement.txt`, `results/main/critic_ranking_by_annotator.txt`.
+- Strict hallucination: agreement 81.3%, **Cohen's κ 0.517 (moderate)**, below the pre-registered 0.6 target. Broad κ 0.297, exact label κ 0.345.
+- **Direction of disagreement:** Sonnet marked 24 strict; the judge marked 50, of which Sonnet agreed with 23. So gpt-6-luna flags many calls as hallucinations that Sonnet calls reasonable (judge precision 0.46, recall 0.96 relative to Sonnet). On pilot 2, gpt-6-luna was *more lenient* than Opus, so the three LLM judges do not agree on where the line is. Absolute hallucination rates are therefore judge-dependent and should be reported with that caveat.
+- **Critic ranking is robust to the annotator:** on the 150 items, AUROC Clef 0.771 vs gpt-5-mini 0.628 with Sonnet labels (0.728 vs 0.648 with judge labels); Clef-flash lowest under both. The Clef > gpt-5-mini conclusion does not depend on which LLM defines the positives.
+- This is cross-model agreement, **not human validation**. `data/human/main/labels.csv` remains available for human annotators.
+
 ## Threats to validity
-1. **Judge = agent model** (gpt-6-luna). On pilot 2 it agreed with Opus at strict κ = 0.685 but was more lenient (36 vs 50 positives), so hallucination rates are likely lower bounds. It is also the same family as the arm-B critic. Human κ pending.
+1. **Judge = agent model** (gpt-6-luna), and the same family as the arm-B critic. Agreement with other LLM judges is moderate-to-substantial (strict κ 0.685 vs Opus on pilot 2; 0.517 vs Sonnet on the main sample), with inconsistent direction (more lenient than Opus, stricter than Sonnet). Absolute rates are judge-dependent; critic rankings were stable across judges. No human labels yet.
 2. The positive class (strict hallucination) is defined by that judge. Critic AUROCs measure agreement with the judge, not ground truth.
 3. One run per task. Pilots showed large run-to-run variance in pass/fail.
 4. Terminal-Bench is bash-heavy, so other tool types are under-represented.

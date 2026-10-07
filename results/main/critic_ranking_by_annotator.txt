@@ -1,0 +1,8 @@
+Critic AUROC on the 150-item stratified sample (score = 1 - P(grounded)); positives = strict hallucination
+NB: the sample is stratified by the gpt-6-luna judge, which inflates its positive rate; compare RANKINGS, not values.
+
+critic       vs gpt-6-luna judge   vs Sonnet annotator  n
+clef                       0.728                 0.771  150 (judge pos 50, Sonnet pos 24)
+clef-flash                 0.537                 0.615  150 (judge pos 50, Sonnet pos 24)
+gpt-5-mini                 0.648                 0.628  150 (judge pos 50, Sonnet pos 24)
+gpt-4o                     0.843                 1.000  19 (judge pos 5, Sonnet pos 1)

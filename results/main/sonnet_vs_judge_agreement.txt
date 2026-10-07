@@ -1,0 +1,5 @@
+annotator-labelled items: 150 / 150 (labels file: data/human/main/llm_sonnet/labels.csv)
+strict     agreement 0.813  Cohen's kappa 0.517
+broad      agreement 0.600  Cohen's kappa 0.297
+full label agreement 0.540  Cohen's kappa 0.345
+strict: annotator 24, judge 50, both 23 -> judge precision vs annotator 0.460, judge recall 0.958
