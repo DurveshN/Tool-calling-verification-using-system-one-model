@@ -1,0 +1,7 @@
+Paired critic comparison on identical calls (main run, judge = gpt-6-luna, labels_gpt6luna; replay on identical logged inputs)
+Computed 2026-10-07 with an ad-hoc script (to be folded into analyze.py). PRELIMINARY: 90% of calls judged; gpt-5-mini replay 79.5% complete (CallMissed monthly plan limit).
+common calls: 15657, strict positives: 488
+  clef        AUROC 0.787  latency p50 669 ms  p95 1375 ms
+  clef-flash  AUROC 0.599  latency p50 349 ms  p95 908 ms
+  gpt-5-mini  AUROC 0.709  latency p50 1774 ms  p95 2982 ms
+AUROC(clef) - AUROC(gpt-5-mini): +0.078  95% CI [+0.031, +0.115] (task-cluster bootstrap, 500 reps, seed 1)
