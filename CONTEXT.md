@@ -54,5 +54,12 @@ Research prototype: reduce LLM tool-calling hallucination by verifying each (too
 - Judge validity: gpt-6-luna vs Opus on pilot 2: strict κ 0.685, broad κ 0.737. gpt-6-luna is more lenient (36 vs 50 strict positives).
 - 2026-10-06: on VM `~/post_main.sh` running judge (`~/judge_main.log`) + replay (`~/replay_main.log`); main = 21,881 calls, 261 packets / 346 parts.
 
+## Post-main (2026-10-07)
+- Jobs finished on VM; all outputs pulled locally (`data/judge/main`, `data/replay.jsonl` main rows, `runs/_vm_logs/`). VM no longer needed.
+- CallMissed account hit its MONTHLY plan limit (50,000 LLM calls) → gpt-5-mini replay 79.5% done, gpt-4o 0/3000, 25 judge parts failed (retry needs quota).
+- Preliminary (`results/main_prelim/`): strict halluc./call A 3.8%, B 2.3%, C 3.2%; paired AUROC on 15,657 common calls: Clef 0.787, gpt-5-mini 0.709 (Δ +0.078, 95% CI [+0.031, +0.115]), Clef-flash 0.599; p50 latency Clef 669 ms vs gpt-5-mini 1774 ms.
+- SSH NSG rule updated to 106.213.82.250/32 (user IP changed).
+- SECURITY: agent key (fp …643f) was exposed in VM error files (deleted) and in chat → user to rotate.
+
 ## Next
-Pull `data/judge/main` + `data/replay.jsonl` from VM → `analyze.py --phase main --labels-dir labels_gpt6luna` → significance tests (McNemar, cluster bootstrap, DeLong/bootstrap AUROC) → human κ sample (150 calls) → paper. Then VM stop/delete (user decision).
+Quota (upgrade or monthly reset) → retry: `judge_llm.py --phase main --labels-dir labels_gpt6luna` and `replay.mjs --phase main` (resumable) → final `analyze.py` + significance tests → human κ sample (150 calls) → paper. Delete Azure RG `research-paper` (user decision).
