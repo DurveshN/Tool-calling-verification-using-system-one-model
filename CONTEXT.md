@@ -66,5 +66,11 @@ Research prototype: reduce LLM tool-calling hallucination by verifying each (too
 - Running detached in WSL: `~/retry_local.sh` (judge → `~/retry_judge.log`), `~/retry_replay.sh` (replay → `~/retry_replay.log`; WSL Node 20 needs `--experimental-detect-module`).
 - Azure RG `research-paper` deletion requested 2026-10-07 after verifying all VM data copied (runs, judge, replay, logs, post_main.sh archived).
 
+## Final data + analysis (2026-10-07)
+- Judge 346/346 parts (fill-in request fixed single-call omissions). Replay: Clef/Clef-flash 100%, gpt-5-mini 21,783/21,784, gpt-4o 3,000/3,000.
+- Results: `.research/07-main-results.md`, tables `results/main/{summary,stats}.md`, `results/main/test_retest.txt`.
+- Headline: Clef AUROC 0.799 vs gpt-5-mini 0.710 (Δ +0.089 [+0.053,+0.116]) and vs gpt-4o +0.132; p50 668 vs 1770 ms; flips 0.62% vs 9.6%; Clef ECE 0.29 (poor calibration). Agent: pass 22/31/31 (Holm p 0.106 n.s.); strict halluc./task B −1.27 [−2.53,−0.23] sig., C −1.52 [−3.20,+0.05] borderline.
+- Azure RG deleted 2026-10-07.
+
 ## Next
-After retries: → retry: `judge_llm.py --phase main --labels-dir labels_gpt6luna` and `replay.mjs --phase main` (resumable) → final `analyze.py` + significance tests → human κ sample (150 calls) → paper. Delete Azure RG `research-paper` (user decision).
+User fills `data/human/main/labels.csv` (150 blinded items in `sample.md`, rubric `judge/rubric.md`) → `python scripts/human_agreement.py` → paper draft.

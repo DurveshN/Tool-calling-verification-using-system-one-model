@@ -1,0 +1,2 @@
+clef (arm C live vs replay, identical input): n=5833 mean|dP|=0.0085 max=0.272 verdict flips at 0.5 = 36 (0.62%)
+gpt-5-mini (arm B live vs replay, identical input): n=7229 mean|dP|=0.1113 max=0.980 verdict flips at 0.5 = 695 (9.61%)
