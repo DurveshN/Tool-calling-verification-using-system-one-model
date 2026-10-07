@@ -61,5 +61,10 @@ Research prototype: reduce LLM tool-calling hallucination by verifying each (too
 - SSH NSG rule updated to 106.213.82.250/32 (user IP changed).
 - SECURITY: agent key (fp …643f) was exposed in VM error files (deleted) and in chat → user to rotate.
 
+## Retries (2026-10-07, local, second CallMissed account)
+- New keys: CALLMISSED_REPLAY_API_KEY fp c47ff742, CALLMISSED_JUDGE_API_KEY fp 132561a1 (verified gpt-5-mini, gpt-4o, gpt-6-luna).
+- Running detached in WSL: `~/retry_local.sh` (judge → `~/retry_judge.log`), `~/retry_replay.sh` (replay → `~/retry_replay.log`; WSL Node 20 needs `--experimental-detect-module`).
+- Azure RG `research-paper` deletion requested 2026-10-07 after verifying all VM data copied (runs, judge, replay, logs, post_main.sh archived).
+
 ## Next
-Quota (upgrade or monthly reset) → retry: `judge_llm.py --phase main --labels-dir labels_gpt6luna` and `replay.mjs --phase main` (resumable) → final `analyze.py` + significance tests → human κ sample (150 calls) → paper. Delete Azure RG `research-paper` (user decision).
+After retries: → retry: `judge_llm.py --phase main --labels-dir labels_gpt6luna` and `replay.mjs --phase main` (resumable) → final `analyze.py` + significance tests → human κ sample (150 calls) → paper. Delete Azure RG `research-paper` (user decision).
