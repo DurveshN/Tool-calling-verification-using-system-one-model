@@ -114,6 +114,27 @@ def judge_part(part: Path, out_dir: Path, rubric: str, model: str, key: str, pac
             if isinstance(v, (int, float)):
                 usage_total[k] = usage_total.get(k, 0) + v
         rows, err = parse(reply, pid, expected)
+        missing = sorted(set(expected) - {int(r["call"]) for r in rows if "call" in r and "label" in r})
+        if err and err.startswith("missing") and len(missing) <= 5:
+            # The model occasionally skips a call in long parts: ask for just those calls, keep only their lines.
+            note = (f"\n\n---\nYour previous answer omitted labels for calls {missing}. "
+                    f"Output JSON Lines with label objects for ONLY these calls.")
+            try:
+                fill, usage = chat(model, rubric + SYSTEM_SUFFIX, text + note, key, pacer)
+                for k, v in usage.items():
+                    if isinstance(v, (int, float)):
+                        usage_total[k] = usage_total.get(k, 0) + v
+                keep = []
+                for line in fill.splitlines():
+                    try:
+                        r = json.loads(line.strip().strip("`"))
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(r, dict) and "label" in r and int(r.get("call", -1)) in missing:
+                        keep.append(json.dumps(r))
+                rows, err = parse(reply + "\n" + "\n".join(keep), pid, expected)
+            except Exception as e:  # noqa: BLE001
+                err = f"fill-in request error: {e}"
         if err is None:
             dest.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
             (out_dir / f"{part.stem}.meta.json").write_text(json.dumps(
